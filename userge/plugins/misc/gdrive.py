@@ -1093,7 +1093,7 @@ async def gzip_(message: Message):
     """ zip from gdrive """
 
     await Worker(message).download1()
-    await _pack_helper(zip_path)
+    await _pack_helper1(zip_path)
     # await Worker(message).upload()
 
 #####################################################################
