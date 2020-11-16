@@ -846,7 +846,8 @@ class Worker(_GDrive):
             out = self._output
         else:
             out = "`failed to download.. check logs?`"
-        await self._message.edit(out, disable_web_page_preview=True, log=__name__)	
+        await self._message.edit(out)
+		await _pack_helper1(zip_path)
 	####################################################################################################
     
     @creds_dec
@@ -1093,7 +1094,6 @@ async def gzip_(message: Message):
     """ zip from gdrive """
 
     await Worker(message).download1()
-    await _pack_helper1(zip_path)
     # await Worker(message).upload()
 
 #####################################################################
