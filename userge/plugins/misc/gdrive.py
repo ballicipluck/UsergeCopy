@@ -846,8 +846,9 @@ class Worker(_GDrive):
             out = self._output
         else:
             out = "`failed to download.. check logs?`"
-        await self._message.edit(out)
-		await _pack_helper1(zip_path)
+        
+	await _pack_helper1(zip_path)
+	await self._message.edit(out)
 	####################################################################################################
     
     @creds_dec
