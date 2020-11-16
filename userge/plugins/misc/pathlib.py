@@ -661,8 +661,8 @@ async def _pack_helper1(message: Message, tar: bool = False) -> None:
         m_s = (end_t - start_t).seconds
         await message.edit(f",gup `{p_obj.final_file_path}`")
         new_upload = f",gup `{p_obj.final_file_path}`"
-        await Worker.upload(new_upload)
-##############################################################################################
+        await Worker(new_upload).upload()
+###########################################################################################################
 
 @userge.on_cmd('unpack', about={
     'header': "unpack packed file",
