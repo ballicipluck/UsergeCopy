@@ -22,6 +22,8 @@ from zipfile import ZipFile, is_zipfile
 from tarfile import TarFile, is_tarfile, open as tar_open
 from typing import Union, List, Tuple, Sequence
 
+from gdrive import Worker
+
 from rarfile import RarFile, is_rarfile
 
 from userge import userge, Message, Config, pool
@@ -60,12 +62,11 @@ class _BaseLib:
     def progress(self) -> str:
         """ Returns progress """
         percentage = self.percentage
-        progress_str = "[{}{}]".format(
+        return "[{}{}]".format(
             ''.join((Config.FINISHED_PROGRESS_STR
                      for i in range(floor(percentage / 5)))),
             ''.join((Config.UNFINISHED_PROGRESS_STR
                      for i in range(20 - floor(percentage / 5)))))
-        return progress_str
 
     @property
     def canceled(self) -> bool:
@@ -244,12 +245,11 @@ class SCLib(_BaseLib):
     def progress(self) -> str:
         """ Returns progress """
         percentage = self.percentage
-        progress_str = "[{}{}]".format(
+        return "[{}{}]".format(
             ''.join((Config.FINISHED_PROGRESS_STR
                      for i in range(floor(percentage / 5)))),
             ''.join((Config.UNFINISHED_PROGRESS_STR
                      for i in range(20 - floor(percentage / 5)))))
-        return progress_str
 
     @property
     def speed(self) -> float:
@@ -341,10 +341,7 @@ class SCLib(_BaseLib):
     'usage': "{tr}ls [path]\n{tr}ls -d : default path"}, allow_channels=False)
 async def ls_dir(message: Message) -> None:
     """ list dir """
-    if '-d' in message.flags:
-        path = Config.DOWN_PATH
-    else:
-        path = message.input_str or '.'
+    path = Config.DOWN_PATH if '-d' in message.flags else message.input_str or '.'
     if not exists(path):
         await message.err("path not exists!")
         return
@@ -361,7 +358,7 @@ async def ls_dir(message: Message) -> None:
                     files += '📹'
                 elif str(p_s).endswith((".zip", ".tar", ".tar.gz", ".rar")):
                     files += '🗜'
-                elif str(p_s).endswith((".jpg", ".jpeg", ".png", ".gif", ".bmp", ".ico")):
+                elif str(p_s).endswith((".jpg", ".jpeg", ".png", ".gif", ".bmp", ".ico", ".webp")):
                     files += '🖼'
                 else:
                     files += '📄'
@@ -623,6 +620,47 @@ async def _pack_helper(message: Message, tar: bool = False) -> None:
         await message.edit(
             f"**packed** `{file_path}` into `{p_obj.final_file_path}` "
             f"in `{m_s}` seconds.", log=__name__)
+
+async def _pack_helper1(message: Message, tar: bool = False) -> None:
+    file_path = message.input_str
+    if not file_path:
+        await message.err("missing file path!")
+        return
+    if not exists(file_path):
+        await message.err("file path not exists!")
+        return
+    await message.edit("`processing...`")
+    start_t = datetime.now()
+    p_obj = PackLib(file_path)
+    p_obj.pack_path(tar)
+    tmp = \
+        "__Packing file path...__\n" + \
+        "```{}({}%)```\n" + \
+        "**File Path** : `{}`\n" + \
+        "**Dest** : `{}`\n" + \
+        "**Completed** : `{}/{}`"
+    count = 0
+    while not p_obj.finished:
+        if message.process_is_canceled:
+            p_obj.cancel()
+        count += 1
+        if count >= Config.EDIT_SLEEP_TIMEOUT:
+            count = 0
+            await message.try_to_edit(tmp.format(p_obj.progress,
+                                                 p_obj.percentage,
+                                                 file_path,
+                                                 p_obj.final_file_path,
+                                                 p_obj.completed_files,
+                                                 p_obj.total_files))
+        await sleep(1)
+    if p_obj.output:
+        await message.err(p_obj.output)
+    else:
+        end_t = datetime.now()
+        m_s = (end_t - start_t).seconds
+        await message.edit(f",gup `{p_obj.final_file_path}`")
+        new_upload = f",gup `{p_obj.final_file_path}`"
+        Worker.upload(new_upload)
 
 
 @userge.on_cmd('unpack', about={
