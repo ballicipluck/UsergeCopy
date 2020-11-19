@@ -1,5 +1,5 @@
 icon: https://apps.okteto.com/movies/icon.png
 deploy:
-  - apt-get install -r python3-pip
+  - apt-get install -y python3-pip
   - pip install -r requirements.txt
   - python -m tests
